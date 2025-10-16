@@ -1,5 +1,6 @@
 const NovelService = require('../services/novel.service');
 const MongoDB = require('../utils/mongodb.util');
+const ApiError = require('../api-error');
 
 // Get all novels
 exports.getAllNovels = async (req, res, next) => {
@@ -28,12 +29,18 @@ exports.getNovelById = async (req, res, next) => {
 
 // Create a new novel
 exports.createNovel = async (req, res, next) => {
+    if (!req.body?.title) {
+        return next(new ApiError(400, 'Title can not be empty'));
+    }
+    
     try {
         const novelService = new NovelService(MongoDB.client);
         const newNovel = await novelService.create(req.body);
         res.status(201).json(newNovel);
-    } catch (err) {
-        return next(err);
+    } catch (error) {
+        return next(
+            new ApiError(500, 'An error occurred while creating the novel', error)
+        );
     }
 };
 
