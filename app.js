@@ -9,13 +9,23 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Import routes
 const novelsRoutes = require('./app/routes/novel.route');
+const chaptersRoutes = require('./app/routes/chapter.route');
+const commentsRoutes = require('./app/routes/comment.route');
+const authRoutes = require('./app/routes/auth.route');
+const usersRoutes = require('./app/routes/user.route');
 
 app.get('/', (req, res) => {
     res.json({ message: 'Welcome to novel application' });
 });
 
+// Register routes
 app.use('/api/novels', novelsRoutes);
+app.use('/api/chapters', chaptersRoutes);
+app.use('/api/comments', commentsRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/users', usersRoutes);
 
 app.use((req, res, next) => {
     return next(new ApiError(404, 'Resource Not Found'));

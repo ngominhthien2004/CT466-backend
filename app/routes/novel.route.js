@@ -8,6 +8,10 @@ router.route("/")
     .post(novels.createNovel)
     .delete(novels.deleteAllNovels);
 
+// Route cụ thể phải đặt TRƯỚC route động /:id
+router.route("/favorite")
+    .get(novels.findAllFavoriteNovels);
+
 router.route("/:id")
     .get(novels.getNovelById)
     .put(novels.updateNovel)
