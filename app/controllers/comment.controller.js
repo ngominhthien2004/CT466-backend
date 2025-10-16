@@ -20,6 +20,14 @@ exports.getCommentsByNovelId = async (req, res, next) => {
     try {
         const commentService = new CommentService(MongoDB.client);
         const comments = await commentService.findByNovelId(req.params.novelId);
+        
+        if (comments.length === 0) {
+            return res.json({
+                message: 'No comments found for this novel',
+                data: []
+            });
+        }
+        
         res.json(comments);
     } catch (error) {
         return next(
@@ -33,6 +41,14 @@ exports.getCommentsByUserId = async (req, res, next) => {
     try {
         const commentService = new CommentService(MongoDB.client);
         const comments = await commentService.findByUserId(req.params.userId);
+        
+        if (comments.length === 0) {
+            return res.json({
+                message: 'No comments found for this user',
+                data: []
+            });
+        }
+        
         res.json(comments);
     } catch (error) {
         return next(
