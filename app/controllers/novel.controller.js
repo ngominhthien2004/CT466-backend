@@ -19,11 +19,11 @@ exports.getNovelById = async (req, res, next) => {
         const novelService = new NovelService(MongoDB.client);
         const novel = await novelService.findById(req.params.id);
         if (!novel) {
-            return res.status(404).json({ message: 'Novel not found' });
+            return next(new ApiError(404, 'Novel not found'));
         }
         res.json(novel);
-    } catch (err) {
-        return next(err);
+    } catch (error) {
+        return next(new ApiError(500, 'An error occurred while retrieving the novel with id ' + req.params.id, error));
     }
 };
 
@@ -50,11 +50,11 @@ exports.updateNovel = async (req, res, next) => {
         const novelService = new NovelService(MongoDB.client);
         const updatedNovel = await novelService.update(req.params.id, req.body);
         if (!updatedNovel) {
-            return res.status(404).json({ message: 'Novel not found' });
+            return next(new ApiError(404, 'Novel not found'));
         }
         res.json(updatedNovel);
-    } catch (err) {
-        return next(err);
+    } catch (error) {
+        return next(new ApiError(500, 'An error occurred while updating the novel with id ' + req.params.id, error));
     }
 };
 
@@ -64,11 +64,11 @@ exports.deleteNovel = async (req, res, next) => {
         const novelService = new NovelService(MongoDB.client);
         const deletedNovel = await novelService.delete(req.params.id);
         if (!deletedNovel) {
-            return res.status(404).json({ message: 'Novel not found' });
+            return next(new ApiError(404, 'Novel not found'));
         }
         res.json({ message: 'Novel deleted' });
-    } catch (err) {
-        return next(err);
+    } catch (error) {
+        return next(new ApiError(500, 'An error occurred while deleting the novel with id ' + req.params.id, error));
     }
 };
 
@@ -78,8 +78,8 @@ exports.deleteAllNovels = async (req, res, next) => {
         const novelService = new NovelService(MongoDB.client);
         const deletedCount = await novelService.deleteAll();
         res.json({ message: `${deletedCount} novels deleted` });
-    } catch (err) {
-        return next(err);
+    } catch (error) {
+        return next(new ApiError(500, 'An error occurred while deleting all novels', error));
     }
 };
 
@@ -89,7 +89,7 @@ exports.findAllFavoriteNovels = async (req, res, next) => {
         const novelService = new NovelService(MongoDB.client);
         const novels = await novelService.findFavorite();
         res.json(novels);
-    } catch (err) {
-        return next(err);
+    } catch (error) {
+        return next(new ApiError(500, 'An error occurred while retrieving favorite novels', error));
     }
 };
