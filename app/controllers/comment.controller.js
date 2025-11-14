@@ -36,6 +36,21 @@ exports.getCommentsByNovelId = async (req, res, next) => {
     }
 };
 
+// Get comments by chapter ID
+// Only return comments that have chapterId matching the requested chapter
+exports.getCommentsByChapterId = async (req, res, next) => {
+    try {
+        const commentService = new CommentService(MongoDB.client);
+        const comments = await commentService.findByChapterId(req.params.chapterId);
+        
+        res.json(comments);
+    } catch (error) {
+        return next(
+            new ApiError(500, 'An error occurred while retrieving comments for chapter ' + req.params.chapterId, error)
+        );
+    }
+};
+
 // Get comments by user ID
 exports.getCommentsByUserId = async (req, res, next) => {
     try {
@@ -150,6 +165,19 @@ exports.deleteCommentsByNovelId = async (req, res, next) => {
     } catch (error) {
         return next(
             new ApiError(500, 'An error occurred while deleting comments for novel ' + req.params.novelId, error)
+        );
+    }
+};
+
+// Delete all comments of a chapter
+exports.deleteCommentsByChapterId = async (req, res, next) => {
+    try {
+        const commentService = new CommentService(MongoDB.client);
+        const deletedCount = await commentService.deleteByChapterId(req.params.chapterId);
+        res.json({ message: `${deletedCount} comments deleted for chapter ${req.params.chapterId}` });
+    } catch (error) {
+        return next(
+            new ApiError(500, 'An error occurred while deleting comments for chapter ' + req.params.chapterId, error)
         );
     }
 };

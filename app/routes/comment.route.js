@@ -12,6 +12,10 @@ router.route("/novel/:novelId")
     .get(comments.getCommentsByNovelId)
     .delete(comments.deleteCommentsByNovelId);
 
+router.route("/chapter/:chapterId")
+    .get(comments.getCommentsByChapterId)
+    .delete(comments.deleteCommentsByChapterId);
+
 router.route("/user/:userId")
     .get(comments.getCommentsByUserId)
     .delete(comments.deleteCommentsByUserId);
