@@ -77,6 +77,17 @@ exports.deleteGenre = async (req, res, next) => {
         if (!deletedGenre) {
             return next(new ApiError(404, 'Genre not found'));
         }
+
+        // Sau khi xóa genre, cập nhật các novel để loại bỏ id genre khỏi mảng genres
+        const NovelService = require('../services/novel.service');
+        const novelService = new NovelService(MongoDB.client);
+        // genres lưu id dạng ObjectId hoặc string
+        const genreId = req.params.id;
+        await novelService.Novel.updateMany(
+            { genres: { $in: [genreId, new require('mongodb').ObjectId(genreId)] } },
+            { $pull: { genres: { $in: [genreId, new require('mongodb').ObjectId(genreId)] } } }
+        );
+
         res.json({ message: 'Genre deleted successfully' });
     } catch (error) {
         return next(new ApiError(500, 'An error occurred while deleting genre', error));

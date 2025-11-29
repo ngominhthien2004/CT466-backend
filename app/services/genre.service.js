@@ -28,7 +28,6 @@ class GenreService {
         const genre = {
             name: payload.name,
             slug: payload.slug,
-            icon: payload.icon || '',
             description: payload.description || '',
             createdAt: new Date(),
             updatedAt: new Date(),
@@ -39,8 +38,10 @@ class GenreService {
 
     // Cập nhật genre
     async update(id, payload) {
+        // Loại bỏ icon nếu có
+        const { icon, ...rest } = payload;
         const update = {
-            ...payload,
+            ...rest,
             updatedAt: new Date(),
         };
         const result = await this.Genre.findOneAndUpdate(
