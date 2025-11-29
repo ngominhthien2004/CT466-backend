@@ -15,6 +15,8 @@ const chaptersRoutes = require('./app/routes/chapter.route');
 const commentsRoutes = require('./app/routes/comment.route');
 const authRoutes = require('./app/routes/auth.route');
 const usersRoutes = require('./app/routes/user.route');
+
+const genresRoutes = require('./app/routes/genre.route');
 const readingHistoryRoutes = require('./app/routes/readingHistory.route');
 
 app.get('/', (req, res) => {
@@ -27,6 +29,7 @@ app.use('/api/chapters', chaptersRoutes);
 app.use('/api/comments', commentsRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/users', usersRoutes);
+app.use('/api/genres', genresRoutes);
 app.use('/api/reading-history', readingHistoryRoutes);
 
 app.use((req, res, next) => {
