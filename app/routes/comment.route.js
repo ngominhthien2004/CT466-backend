@@ -25,4 +25,13 @@ router.route("/:id")
     .put(comments.updateComment)
     .delete(comments.deleteComment);
 
+router.route("/:id/like")
+    .post(comments.likeComment);
+
+router.route("/:id/unlike")
+    .post(comments.unlikeComment);
+
+router.route("/:id/replies")
+    .get(comments.getReplies);
+
 module.exports = router;

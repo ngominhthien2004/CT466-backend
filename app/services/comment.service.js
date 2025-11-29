@@ -12,9 +12,11 @@ class CommentService {
             chapterId: payload.chapterId,
             userId: payload.userId,
             userName: payload.userName,
+            userAvatar: payload.userAvatar,
             content: payload.content,
             rating: payload.rating || 0,
-            likes: payload.likes || 0,
+            parentId: payload.parentId, // For reply functionality
+            likedBy: payload.likedBy || [], // Array of userIds who liked
         };
 
         // Remove undefined fields
@@ -73,14 +75,76 @@ class CommentService {
             comment.chapterId = new ObjectId(comment.chapterId);
         }
         
+        // Convert parentId to ObjectId if it's a valid string (for replies)
+        if (comment.parentId && ObjectId.isValid(comment.parentId)) {
+            comment.parentId = new ObjectId(comment.parentId);
+        }
+        
         console.log('Create comment - before insert:', comment);
 
         const result = await this.Comment.insertOne({
             ...comment,
+            likedBy: [], // Initialize empty likedBy array
             createdAt: new Date(),
             updatedAt: new Date(),
         });
         return await this.findById(result.insertedId);
+    }
+    
+    // Like a comment
+    async likeComment(commentId, userId) {
+        const comment = await this.findById(commentId);
+        if (!comment) {
+            throw new Error('Comment not found');
+        }
+        
+        const likedBy = comment.likedBy || [];
+        
+        // Check if user already liked
+        if (likedBy.includes(userId)) {
+            return comment;
+        }
+        
+        // Add user to likedBy array
+        await this.Comment.findOneAndUpdate(
+            { _id: new ObjectId(commentId) },
+            { 
+                $push: { likedBy: userId },
+                $set: { updatedAt: new Date() }
+            },
+            { returnDocument: 'after' }
+        );
+        
+        // Return updated comment
+        return await this.findById(commentId);
+    }
+    
+    // Unlike a comment
+    async unlikeComment(commentId, userId) {
+        const comment = await this.findById(commentId);
+        if (!comment) {
+            throw new Error('Comment not found');
+        }
+        
+        // Remove user from likedBy array
+        await this.Comment.findOneAndUpdate(
+            { _id: new ObjectId(commentId) },
+            { 
+                $pull: { likedBy: userId },
+                $set: { updatedAt: new Date() }
+            },
+            { returnDocument: 'after' }
+        );
+        
+        // Return updated comment
+        return await this.findById(commentId);
+    }
+    
+    // Get replies for a comment
+    async getReplies(parentId) {
+        return await this.findAll({ 
+            parentId: ObjectId.isValid(parentId) ? new ObjectId(parentId) : null 
+        });
     }
 
     // Update comment

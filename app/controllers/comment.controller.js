@@ -194,3 +194,50 @@ exports.deleteCommentsByUserId = async (req, res, next) => {
         );
     }
 };
+
+// Like a comment
+exports.likeComment = async (req, res, next) => {
+    if (!req.body?.userId) {
+        return next(new ApiError(400, 'User ID can not be empty'));
+    }
+    
+    try {
+        const commentService = new CommentService(MongoDB.client);
+        const result = await commentService.likeComment(req.params.id, req.body.userId);
+        res.json(result);
+    } catch (error) {
+        return next(
+            new ApiError(500, 'An error occurred while liking comment with id ' + req.params.id, error)
+        );
+    }
+};
+
+// Unlike a comment
+exports.unlikeComment = async (req, res, next) => {
+    if (!req.body?.userId) {
+        return next(new ApiError(400, 'User ID can not be empty'));
+    }
+    
+    try {
+        const commentService = new CommentService(MongoDB.client);
+        const result = await commentService.unlikeComment(req.params.id, req.body.userId);
+        res.json(result);
+    } catch (error) {
+        return next(
+            new ApiError(500, 'An error occurred while unliking comment with id ' + req.params.id, error)
+        );
+    }
+};
+
+// Get replies for a comment
+exports.getReplies = async (req, res, next) => {
+    try {
+        const commentService = new CommentService(MongoDB.client);
+        const replies = await commentService.getReplies(req.params.id);
+        res.json(replies);
+    } catch (error) {
+        return next(
+            new ApiError(500, 'An error occurred while retrieving replies for comment ' + req.params.id, error)
+        );
+    }
+};
