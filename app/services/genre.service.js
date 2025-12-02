@@ -38,18 +38,38 @@ class GenreService {
 
     // Cập nhật genre
     async update(id, payload) {
-        // Loại bỏ icon nếu có
-        const { icon, ...rest } = payload;
-        const update = {
-            ...rest,
-            updatedAt: new Date(),
-        };
+        const update = {};
+        
+        // Only add fields that are explicitly provided
+        if (payload.name !== undefined) update.name = payload.name;
+        if (payload.slug !== undefined) update.slug = payload.slug;
+        if (payload.description !== undefined) update.description = payload.description;
+        
+        update.updatedAt = new Date();
+        
         const result = await this.Genre.findOneAndUpdate(
             { _id: ObjectId.isValid(id) ? new ObjectId(id) : null },
             { $set: update },
             { returnDocument: 'after' }
         );
-        return result.value;
+        
+        // If genre name was updated, update all novels that use this genre
+        if (payload.name !== undefined && result.value) {
+            const oldGenre = await this.findById(id);
+            if (oldGenre && oldGenre.name !== payload.name) {
+                const NovelService = require('./novel.service');
+                const MongoDB = require('../utils/mongodb.util');
+                const novelService = new NovelService(MongoDB.client);
+                
+                // Update all novels that have the old genre name
+                await novelService.Novel.updateMany(
+                    { genres: oldGenre.name },
+                    { $set: { "genres.$": payload.name } }
+                );
+            }
+        }
+        
+        return result.value || result;
     }
 
     // Xóa genre
@@ -57,7 +77,7 @@ class GenreService {
         const result = await this.Genre.findOneAndDelete({
             _id: ObjectId.isValid(id) ? new ObjectId(id) : null,
         });
-        return result.value;
+        return result.value || result;
     }
 
     // Xóa tất cả genres
