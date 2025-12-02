@@ -24,6 +24,7 @@ class NovelService {
             (key) => novel[key] === undefined && delete novel[key]
         );
 
+        console.log('Extracted novel data:', novel);
         return novel;
     }
 

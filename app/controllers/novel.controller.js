@@ -1,6 +1,7 @@
 const NovelService = require('../services/novel.service');
 const MongoDB = require('../utils/mongodb.util');
 const ApiError = require('../api-error');
+const { ObjectId } = require('mongodb');
 
 // Get all novels
 exports.getAllNovels = async (req, res, next) => {
@@ -16,8 +17,15 @@ exports.getAllNovels = async (req, res, next) => {
 // Get a single novel by ID
 exports.getNovelById = async (req, res, next) => {
     try {
+        // Log and validate id format first
+        const id = req.params.id;
+        console.log('[novel.controller] getNovelById called with id=', id);
+        if (!ObjectId.isValid(id)) {
+            return next(new ApiError(400, 'Invalid novel id'));
+        }
+
         const novelService = new NovelService(MongoDB.client);
-        const novel = await novelService.findById(req.params.id);
+        const novel = await novelService.findById(id);
         if (!novel) {
             return next(new ApiError(404, 'Novel not found'));
         }
@@ -47,8 +55,13 @@ exports.createNovel = async (req, res, next) => {
 // Update a novel
 exports.updateNovel = async (req, res, next) => {
     try {
+        const id = req.params.id;
+        if (!ObjectId.isValid(id)) {
+            return next(new ApiError(400, 'Invalid novel id'));
+        }
+
         const novelService = new NovelService(MongoDB.client);
-        const updatedNovel = await novelService.update(req.params.id, req.body);
+        const updatedNovel = await novelService.update(id, req.body);
         if (!updatedNovel) {
             return next(new ApiError(404, 'Novel not found'));
         }
@@ -61,8 +74,13 @@ exports.updateNovel = async (req, res, next) => {
 // Delete a novel
 exports.deleteNovel = async (req, res, next) => {
     try {
+        const id = req.params.id;
+        if (!ObjectId.isValid(id)) {
+            return next(new ApiError(400, 'Invalid novel id'));
+        }
+
         const novelService = new NovelService(MongoDB.client);
-        const deletedNovel = await novelService.delete(req.params.id);
+        const deletedNovel = await novelService.delete(id);
         if (!deletedNovel) {
             return next(new ApiError(404, 'Novel not found'));
         }
