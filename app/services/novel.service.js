@@ -1,8 +1,46 @@
 const { ObjectId } = require('mongodb');
+const fs = require('fs');
+const path = require('path');
 
 class NovelService {
     constructor(client) {
         this.Novel = client.db().collection('novels');
+    }
+
+    // Save base64 image to file system
+    saveImage(novelId, base64Image) {
+        if (!base64Image || !base64Image.startsWith('data:image/')) {
+            return base64Image; // Return as-is if not base64
+        }
+
+        try {
+            // Extract image extension and data
+            const matches = base64Image.match(/^data:image\/(\w+);base64,(.+)$/);
+            if (!matches) return base64Image;
+
+            const ext = matches[1]; // jpg, png, etc.
+            const data = matches[2];
+            const buffer = Buffer.from(data, 'base64');
+
+            // Create directory path: frontend/public/assets/Novel/<novelId>
+            const frontendDir = path.join(__dirname, '../../../frontend/public/assets/Novel', novelId);
+            
+            // Create directory if it doesn't exist
+            if (!fs.existsSync(frontendDir)) {
+                fs.mkdirSync(frontendDir, { recursive: true });
+            }
+
+            // Save file as cover.{ext}
+            const fileName = `cover.${ext}`;
+            const filePath = path.join(frontendDir, fileName);
+            fs.writeFileSync(filePath, buffer);
+
+            // Return relative path for frontend to use
+            return `/assets/Novel/${novelId}/${fileName}`;
+        } catch (error) {
+            console.error('Error saving image:', error);
+            return base64Image; // Return original if save fails
+        }
     }
 
     // Extract novel data from request (for create - with defaults)
@@ -19,7 +57,12 @@ class NovelService {
             favorite: payload.favorite || false,
         };
 
-        console.log('Extracted novel data for create:', novel);
+        // Log with truncated coverImage
+        const logData = { ...novel };
+        if (logData.coverImage && logData.coverImage.length > 50) {
+            logData.coverImage = logData.coverImage.substring(0, 50) + '...';
+        }
+        console.log('Extracted novel data for create:', logData);
         return novel;
     }
 
@@ -41,7 +84,12 @@ class NovelService {
         if (payload.likes !== undefined) novel.likes = payload.likes;
         if (payload.favorite !== undefined) novel.favorite = payload.favorite;
 
-        console.log('Extracted novel data for update:', novel);
+        // Log with truncated coverImage
+        const logData = { ...novel };
+        if (logData.coverImage && logData.coverImage.length > 50) {
+            logData.coverImage = logData.coverImage.substring(0, 50) + '...';
+        }
+        console.log('Extracted novel data for update:', logData);
         return novel;
     }
 
@@ -66,7 +114,21 @@ class NovelService {
             createdAt: new Date(),
             updatedAt: new Date(),
         });
-        return await this.findById(result.insertedId);
+        
+        const createdNovel = await this.findById(result.insertedId);
+        
+        // Save image to file system if base64 provided
+        if (novel.coverImage && novel.coverImage.startsWith('data:image/')) {
+            const imagePath = this.saveImage(result.insertedId.toString(), novel.coverImage);
+            // Update novel with file path
+            await this.Novel.updateOne(
+                { _id: result.insertedId },
+                { $set: { coverImage: imagePath } }
+            );
+            createdNovel.coverImage = imagePath;
+        }
+        
+        return createdNovel;
     }
 
     // Update novel
@@ -75,6 +137,12 @@ class NovelService {
             _id: ObjectId.isValid(id) ? new ObjectId(id) : null,
         };
         const update = this.extractNovelDataForUpdate(payload);
+        
+        // Save image to file system if base64 provided
+        if (update.coverImage && update.coverImage.startsWith('data:image/')) {
+            update.coverImage = this.saveImage(id, update.coverImage);
+        }
+        
         const result = await this.Novel.findOneAndUpdate(
             filter,
             { $set: { ...update, updatedAt: new Date() } },
