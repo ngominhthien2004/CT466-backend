@@ -74,10 +74,33 @@ class GenreService {
 
     // Xóa genre
     async delete(id) {
-        const result = await this.Genre.findOneAndDelete({
-            _id: ObjectId.isValid(id) ? new ObjectId(id) : null,
-        });
-        return result.value || result;
+        try {
+            // First, get the genre to know its name BEFORE deleting
+            const genre = await this.findById(id);
+            
+            if (!genre) {
+                return null;
+            }
+            
+            // Remove this genre from all novels that use it
+            const MongoDB = require('../utils/mongodb.util');
+            const Novel = MongoDB.client.db().collection('novels');
+            
+            await Novel.updateMany(
+                { genres: genre.name },
+                { $pull: { genres: genre.name } }
+            );
+            
+            // Then delete the genre itself
+            const result = await this.Genre.findOneAndDelete({
+                _id: ObjectId.isValid(id) ? new ObjectId(id) : null,
+            });
+            
+            return result.value || result;
+        } catch (error) {
+            console.error('Error in genre.service.delete:', error);
+            throw error;
+        }
     }
 
     // Xóa tất cả genres
