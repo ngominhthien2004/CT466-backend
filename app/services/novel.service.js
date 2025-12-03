@@ -109,25 +109,36 @@ class NovelService {
     // Create novel
     async create(payload) {
         const novel = this.extractNovelDataForCreate(payload);
+        console.log('Inserting novel into database...');
         const result = await this.Novel.insertOne({
             ...novel,
             createdAt: new Date(),
             updatedAt: new Date(),
         });
-        
-        const createdNovel = await this.findById(result.insertedId);
+        console.log('Novel inserted with ID:', result.insertedId);
         
         // Save image to file system if base64 provided
         if (novel.coverImage && novel.coverImage.startsWith('data:image/')) {
-            const imagePath = this.saveImage(result.insertedId.toString(), novel.coverImage);
-            // Update novel with file path
-            await this.Novel.updateOne(
-                { _id: result.insertedId },
-                { $set: { coverImage: imagePath } }
-            );
-            createdNovel.coverImage = imagePath;
+            console.log('Saving image to file system...');
+            try {
+                const imagePath = this.saveImage(result.insertedId.toString(), novel.coverImage);
+                console.log('Image saved at:', imagePath);
+                // Update novel with file path
+                await this.Novel.updateOne(
+                    { _id: result.insertedId },
+                    { $set: { coverImage: imagePath } }
+                );
+                console.log('Novel updated with image path');
+            } catch (error) {
+                console.error('Error saving image for novel:', error);
+                // Continue even if image save fails
+            }
         }
         
+        // Return the updated novel with image path
+        console.log('Fetching created novel...');
+        const createdNovel = await this.findById(result.insertedId);
+        console.log('Returning novel:', createdNovel);
         return createdNovel;
     }
 
