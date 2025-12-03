@@ -19,7 +19,7 @@ class NovelService {
                 await this.Genre.insertOne({
                     name,
                     slug: name.toLowerCase().replace(/\s+/g, '-'),
-                    description: `Thể loại ${name}`,
+                    description: name,
                     createdAt: new Date(),
                     updatedAt: new Date()
                 });
