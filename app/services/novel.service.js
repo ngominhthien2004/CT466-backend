@@ -5,6 +5,26 @@ const path = require('path');
 class NovelService {
     constructor(client) {
         this.Novel = client.db().collection('novels');
+        this.Genre = client.db().collection('genres');
+    }
+
+    // Auto-create genres if they don't exist
+    async ensureGenresExist(genreNames) {
+        if (!genreNames || genreNames.length === 0) return;
+
+        for (const name of genreNames) {
+            const exists = await this.Genre.findOne({ name });
+            if (!exists) {
+                console.log(`Auto-creating genre: ${name}`);
+                await this.Genre.insertOne({
+                    name,
+                    slug: name.toLowerCase().replace(/\s+/g, '-'),
+                    description: `Thể loại ${name}`,
+                    createdAt: new Date(),
+                    updatedAt: new Date()
+                });
+            }
+        }
     }
 
     // Save base64 image to file system
@@ -109,6 +129,10 @@ class NovelService {
     // Create novel
     async create(payload) {
         const novel = this.extractNovelDataForCreate(payload);
+        
+        // Auto-create genres if they don't exist
+        await this.ensureGenresExist(novel.genres);
+        
         console.log('Inserting novel into database...');
         const result = await this.Novel.insertOne({
             ...novel,
@@ -148,6 +172,11 @@ class NovelService {
             _id: ObjectId.isValid(id) ? new ObjectId(id) : null,
         };
         const update = this.extractNovelDataForUpdate(payload);
+        
+        // Auto-create genres if they don't exist
+        if (update.genres) {
+            await this.ensureGenresExist(update.genres);
+        }
         
         // Save image to file system if base64 provided
         if (update.coverImage && update.coverImage.startsWith('data:image/')) {
