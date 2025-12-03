@@ -111,3 +111,48 @@ exports.findAllFavoriteNovels = async (req, res, next) => {
         return next(new ApiError(500, 'An error occurred while retrieving favorite novels', error));
     }
 };
+
+// Toggle favorite for a user
+exports.toggleFavorite = async (req, res, next) => {
+    try {
+        const novelId = req.params.id;
+        const userId = req.body.userId;
+
+        if (!ObjectId.isValid(novelId)) {
+            return next(new ApiError(400, 'Invalid novel id'));
+        }
+
+        if (!userId) {
+            return next(new ApiError(400, 'User ID is required'));
+        }
+
+        const novelService = new NovelService(MongoDB.client);
+        const updatedNovel = await novelService.toggleFavorite(novelId, userId);
+        
+        if (!updatedNovel) {
+            return next(new ApiError(404, 'Novel not found'));
+        }
+
+        res.json(updatedNovel);
+    } catch (error) {
+        return next(new ApiError(500, 'An error occurred while toggling favorite', error));
+    }
+};
+
+// Get novels favorited by a user
+exports.getFavoritesByUserId = async (req, res, next) => {
+    try {
+        const userId = req.params.userId;
+
+        if (!userId) {
+            return next(new ApiError(400, 'User ID is required'));
+        }
+
+        const novelService = new NovelService(MongoDB.client);
+        const novels = await novelService.findByUserId(userId);
+        
+        res.json(novels);
+    } catch (error) {
+        return next(new ApiError(500, 'An error occurred while retrieving user favorites', error));
+    }
+};

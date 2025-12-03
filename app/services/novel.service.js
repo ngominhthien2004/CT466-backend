@@ -73,8 +73,8 @@ class NovelService {
             coverImage: payload.coverImage || '',
             status: payload.status || 'ongoing',
             views: payload.views || 0,
-            likes: payload.likes || 0,
-            favorite: payload.favorite || false,
+            likes: 0, // Will be calculated from favoritedBy.length
+            favoritedBy: [], // Array of user IDs who favorited this novel
         };
 
         // Log with truncated coverImage
@@ -206,7 +206,59 @@ class NovelService {
         return result.deletedCount;
     }
 
-    // Find favorite novels
+    // Toggle favorite for a user
+    async toggleFavorite(novelId, userId) {
+        const novel = await this.findById(novelId);
+        if (!novel) return null;
+
+        const favoritedBy = novel.favoritedBy || [];
+        const index = favoritedBy.indexOf(userId);
+        
+        let update;
+        if (index > -1) {
+            // User already favorited - remove them
+            update = {
+                $pull: { favoritedBy: userId },
+                $set: { 
+                    likes: Math.max(0, (novel.likes || 0) - 1),
+                    updatedAt: new Date()
+                }
+            };
+        } else {
+            // User hasn't favorited - add them
+            update = {
+                $addToSet: { favoritedBy: userId },
+                $set: { 
+                    likes: (novel.likes || 0) + 1,
+                    updatedAt: new Date()
+                }
+            };
+        }
+
+        const result = await this.Novel.findOneAndUpdate(
+            { _id: ObjectId.isValid(novelId) ? new ObjectId(novelId) : null },
+            update,
+            { returnDocument: 'after' }
+        );
+        
+        return result.value || result;
+    }
+
+    // Find novels favorited by user
+    async findByUserId(userId) {
+        return await this.Novel.find({ 
+            favoritedBy: userId 
+        }).toArray();
+    }
+
+    // Check if user has favorited a novel
+    async isFavoritedBy(novelId, userId) {
+        const novel = await this.findById(novelId);
+        if (!novel) return false;
+        return (novel.favoritedBy || []).includes(userId);
+    }
+
+    // Find favorite novels (deprecated - use findByUserId instead)
     async findFavorite() {
         return await this.findAll({ favorite: true });
     }

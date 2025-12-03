@@ -12,6 +12,12 @@ router.route("/")
 router.route("/favorite")
     .get(novels.findAllFavoriteNovels);
 
+router.route("/favorites/:userId")
+    .get(novels.getFavoritesByUserId);
+
+router.route("/:id/favorite")
+    .post(novels.toggleFavorite);
+
 router.route("/:id")
     .get(novels.getNovelById)
     .put(novels.updateNovel)
