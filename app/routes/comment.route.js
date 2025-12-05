@@ -21,6 +21,10 @@ router.route("/user/:userId")
     .get(comments.getCommentsByUserId)
     .delete(comments.deleteCommentsByUserId);
 
+// Report routes - MUST be before /:id routes
+router.route("/reported")
+    .get(authenticate, authorize('admin'), comments.getReportedComments);
+
 router.route("/:id")
     .get(comments.getCommentById)
     .put(authenticate, comments.updateComment)
@@ -34,5 +38,11 @@ router.route("/:id/unlike")
 
 router.route("/:id/replies")
     .get(comments.getReplies);
+
+router.route("/:id/report")
+    .post(authenticate, comments.reportComment);
+
+router.route("/:id/unreport")
+    .post(authenticate, authorize('admin'), comments.unreportComment);
 
 module.exports = router;

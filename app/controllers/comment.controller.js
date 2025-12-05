@@ -241,3 +241,66 @@ exports.getReplies = async (req, res, next) => {
         );
     }
 };
+
+// Report a comment
+exports.reportComment = async (req, res, next) => {
+    if (!req.body?.userId) {
+        return next(new ApiError(400, 'User ID can not be empty'));
+    }
+
+    try {
+        const commentService = new CommentService(MongoDB.client);
+        const result = await commentService.reportComment(
+            req.params.id,
+            req.body.userId,
+            req.body.reason
+        );
+
+        if (!result) {
+            return next(new ApiError(404, 'Comment not found'));
+        }
+
+        res.json({
+            message: 'Comment reported successfully',
+            comment: result
+        });
+    } catch (error) {
+        return next(
+            new ApiError(500, 'An error occurred while reporting comment', error)
+        );
+    }
+};
+
+// Get reported comments (Admin only)
+exports.getReportedComments = async (req, res, next) => {
+    try {
+        const commentService = new CommentService(MongoDB.client);
+        const comments = await commentService.findReported();
+        res.json(comments);
+    } catch (error) {
+        return next(
+            new ApiError(500, 'An error occurred while retrieving reported comments', error)
+        );
+    }
+};
+
+// Unreport a comment (Admin only)
+exports.unreportComment = async (req, res, next) => {
+    try {
+        const commentService = new CommentService(MongoDB.client);
+        const result = await commentService.unreportComment(req.params.id);
+
+        if (!result) {
+            return next(new ApiError(404, 'Comment not found'));
+        }
+
+        res.json({
+            message: 'Comment unreported successfully',
+            comment: result
+        });
+    } catch (error) {
+        return next(
+            new ApiError(500, 'An error occurred while unreporting comment', error)
+        );
+    }
+};

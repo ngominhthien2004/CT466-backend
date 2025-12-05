@@ -17,6 +17,8 @@ class CommentService {
             rating: payload.rating || 0,
             parentId: payload.parentId, // For reply functionality
             likedBy: payload.likedBy || [], // Array of userIds who liked
+            reports: payload.reports || [], // Array of report objects
+            isReported: payload.isReported || false,
         };
 
         // Remove undefined fields
@@ -52,6 +54,17 @@ class CommentService {
         return await this.findAll({ userId });
     }
 
+    // Get reported comments
+    async findReported() {
+        // Query for comments where isReported is true OR reports array exists and not empty
+        return await this.Comment.find({
+            $or: [
+                { isReported: true },
+                { reports: { $exists: true, $not: { $size: 0 } } }
+            ]
+        }).toArray();
+    }
+
     // Get comment by ID
     async findById(id) {
         return await this.Comment.findOne({
@@ -85,6 +98,8 @@ class CommentService {
         const result = await this.Comment.insertOne({
             ...comment,
             likedBy: [], // Initialize empty likedBy array
+            reports: [], // Initialize empty reports array
+            isReported: false,
             createdAt: new Date(),
             updatedAt: new Date(),
         });
@@ -206,6 +221,58 @@ class CommentService {
     async deleteByUserId(userId) {
         const result = await this.Comment.deleteMany({ userId });
         return result.deletedCount;
+    }
+
+    // Report a comment
+    async reportComment(commentId, userId, reason) {
+        const filter = {
+            _id: ObjectId.isValid(commentId) ? new ObjectId(commentId) : null,
+        };
+
+        // First, ensure the comment has reports array
+        await this.Comment.updateOne(
+            filter,
+            {
+                $setOnInsert: { reports: [], isReported: false }
+            },
+            { upsert: false }
+        );
+
+        const report = {
+            userId: userId,
+            reason: reason || 'No reason provided',
+            reportedAt: new Date(),
+        };
+
+        const result = await this.Comment.findOneAndUpdate(
+            filter,
+            {
+                $addToSet: { reports: report }, // Use $addToSet to avoid duplicates
+                $set: { isReported: true, updatedAt: new Date() }
+            },
+            { returnDocument: 'after' }
+        );
+        return result;
+    }
+
+    // Unreport a comment (clear all reports)
+    async unreportComment(commentId) {
+        const filter = {
+            _id: ObjectId.isValid(commentId) ? new ObjectId(commentId) : null,
+        };
+
+        const result = await this.Comment.findOneAndUpdate(
+            filter,
+            {
+                $set: { 
+                    reports: [], 
+                    isReported: false,
+                    updatedAt: new Date() 
+                }
+            },
+            { returnDocument: 'after' }
+        );
+        return result;
     }
 }
 
