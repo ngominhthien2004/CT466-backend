@@ -156,3 +156,21 @@ exports.getFavoritesByUserId = async (req, res, next) => {
         return next(new ApiError(500, 'An error occurred while retrieving user favorites', error));
     }
 };
+
+// Get novels created by a user
+exports.getNovelsByCreator = async (req, res, next) => {
+    try {
+        const userId = req.params.userId;
+
+        if (!userId) {
+            return next(new ApiError(400, 'User ID is required'));
+        }
+
+        const novelService = new NovelService(MongoDB.client);
+        const novels = await novelService.findByCreator(userId);
+        
+        res.json(novels);
+    } catch (error) {
+        return next(new ApiError(500, 'An error occurred while retrieving user novels', error));
+    }
+};

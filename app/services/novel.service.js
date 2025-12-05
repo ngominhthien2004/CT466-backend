@@ -75,6 +75,7 @@ class NovelService {
             views: payload.views || 0,
             likes: 0, // Will be calculated from favoritedBy.length
             favoritedBy: [], // Array of user IDs who favorited this novel
+            createdBy: payload.createdBy || null, // User ID who created this novel
         };
 
         // Log with truncated coverImage
@@ -103,6 +104,7 @@ class NovelService {
         if (payload.views !== undefined) novel.views = payload.views;
         if (payload.likes !== undefined) novel.likes = payload.likes;
         if (payload.favorite !== undefined) novel.favorite = payload.favorite;
+        if (payload.createdBy !== undefined) novel.createdBy = payload.createdBy;
 
         // Log with truncated coverImage
         const logData = { ...novel };
@@ -280,6 +282,13 @@ class NovelService {
     async findByUserId(userId) {
         return await this.Novel.find({ 
             favoritedBy: userId 
+        }).toArray();
+    }
+
+    // Find novels created by user
+    async findByCreator(userId) {
+        return await this.Novel.find({ 
+            createdBy: userId 
         }).toArray();
     }
 

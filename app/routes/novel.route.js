@@ -16,6 +16,9 @@ router.route("/favorite")
 router.route("/favorites/:userId")
     .get(novels.getFavoritesByUserId);
 
+router.route("/creator/:userId")
+    .get(novels.getNovelsByCreator);
+
 router.route("/:id/favorite")
     .post(authenticate, novels.toggleFavorite);
 
