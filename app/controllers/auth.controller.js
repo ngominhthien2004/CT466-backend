@@ -1,6 +1,22 @@
 const UserService = require('../services/user.service');
 const MongoDB = require('../utils/mongodb.util');
 const ApiError = require('../api-error');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+
+// Generate JWT token
+const generateToken = (user) => {
+    return jwt.sign(
+        {
+            id: user._id,
+            username: user.username,
+            email: user.email,
+            role: user.role
+        },
+        process.env.JWT_SECRET,
+        { expiresIn: process.env.JWT_EXPIRE || '7d' }
+    );
+};
 
 // Register new user
 exports.register = async (req, res, next) => {
@@ -24,11 +40,14 @@ exports.register = async (req, res, next) => {
             return next(new ApiError(400, 'Username or email already exists'));
         }
 
-        // Create new user (you should hash password in production!)
+        // Hash password
+        const hashedPassword = await bcrypt.hash(req.body.password, 10);
+
+        // Create new user
         const userData = {
             username: req.body.username,
             email: req.body.email,
-            password: req.body.password, // TODO: Hash this with bcrypt
+            password: hashedPassword,
             fullName: req.body.fullName || '',
             avatar: req.body.avatar || '',
             role: req.body.role || 'user',
@@ -36,12 +55,16 @@ exports.register = async (req, res, next) => {
 
         const user = await userService.create(userData);
 
+        // Generate token
+        const token = generateToken(user);
+
         // Remove password from response
         delete user.password;
 
         res.status(201).json({
             message: 'User registered successfully',
-            user: user
+            user: user,
+            token: token
         });
     } catch (error) {
         return next(
@@ -74,19 +97,23 @@ exports.login = async (req, res, next) => {
             return next(new ApiError(403, 'Your account has been deactivated'));
         }
 
-        // Check password (you should use bcrypt.compare in production!)
-        if (user.password !== req.body.password) {
+        // Verify password
+        const isPasswordValid = await bcrypt.compare(req.body.password, user.password);
+        
+        if (!isPasswordValid) {
             return next(new ApiError(401, 'Invalid email or password'));
         }
+
+        // Generate token
+        const token = generateToken(user);
 
         // Remove password from response
         delete user.password;
 
-        // TODO: Generate JWT token here
         res.json({
             message: 'Login successful',
             user: user,
-            // token: 'your-jwt-token-here'
+            token: token
         });
     } catch (error) {
         return next(

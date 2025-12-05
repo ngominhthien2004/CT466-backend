@@ -1,12 +1,13 @@
 const express = require('express');
 const chapters = require('../controllers/chapter.controller');
+const { authenticate, authorize } = require('../middlewares/auth.middleware');
 
 const router = express.Router();
 
 router.route("/")
     .get(chapters.getAllChapters)
-    .post(chapters.createChapter)
-    .delete(chapters.deleteAllChapters);
+    .post(authenticate, chapters.createChapter)
+    .delete(authenticate, authorize('admin'), chapters.deleteAllChapters);
 
 router.route("/novel/:novelId")
     .get(chapters.getChaptersByNovelId)
@@ -14,7 +15,7 @@ router.route("/novel/:novelId")
 
 router.route("/:id")
     .get(chapters.getChapterById)
-    .put(chapters.updateChapter)
-    .delete(chapters.deleteChapter);
+    .put(authenticate, chapters.updateChapter)
+    .delete(authenticate, chapters.deleteChapter);
 
 module.exports = router;

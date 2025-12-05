@@ -1,22 +1,23 @@
 const express = require('express');
 const readingHistory = require('../controllers/readingHistory.controller');
+const { authenticate } = require('../middlewares/auth.middleware');
 
 const router = express.Router();
 
 // Get user's reading history
 router.route("/:userId")
-    .get(readingHistory.getUserHistory);
+    .get(authenticate, readingHistory.getUserHistory);
 
 // Add to reading history
 router.route("/:userId/add")
-    .post(readingHistory.addToHistory);
+    .post(authenticate, readingHistory.addToHistory);
 
 // Remove from reading history
 router.route("/:userId/remove/:novelId")
-    .delete(readingHistory.removeFromHistory);
+    .delete(authenticate, readingHistory.removeFromHistory);
 
 // Clear all reading history
 router.route("/:userId/clear")
-    .delete(readingHistory.clearHistory);
+    .delete(authenticate, readingHistory.clearHistory);
 
 module.exports = router;
