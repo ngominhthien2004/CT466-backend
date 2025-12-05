@@ -8,7 +8,35 @@ class GenreService {
     // Lấy tất cả genres
     async findAll(filter = {}) {
         const cursor = await this.Genre.find(filter);
-        return await cursor.toArray();
+        const genres = await cursor.toArray();
+        
+        // Get novel count for each genre
+        const MongoDB = require('../utils/mongodb.util');
+        const Novel = MongoDB.client.db().collection('novels');
+        
+        // DEBUG: Check one novel to see how genres are stored
+        const sampleNovel = await Novel.findOne({});
+        console.log('Sample novel genres structure:', sampleNovel?.genres);
+        
+        // Add novelCount to each genre
+        const genresWithCount = await Promise.all(
+            genres.map(async (genre) => {
+                // In database, genres are stored as array of strings (genre names)
+                // Example: novel.genres = ["Kiếm Hiệp", "Huyền Huyễn"]
+                const count = await Novel.countDocuments({
+                    genres: genre.name
+                });
+                
+                console.log(`Genre "${genre.name}" has ${count} novels`);
+                
+                return {
+                    ...genre,
+                    novelCount: count
+                };
+            })
+        );
+        
+        return genresWithCount;
     }
 
     // Lấy genre theo id

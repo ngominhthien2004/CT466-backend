@@ -8,19 +8,8 @@ exports.getAllGenres = async (req, res, next) => {
         const genreService = new GenreService(MongoDB.client);
         const genres = await genreService.findAll();
         
-        // Count novels for each genre
-        const NovelService = require('../services/novel.service');
-        const novelService = new NovelService(MongoDB.client);
-        const allNovels = await novelService.findAll();
-        
-        const genresWithCount = genres.map(genre => ({
-            ...genre,
-            novelCount: allNovels.filter(novel => 
-                novel.genres && novel.genres.includes(genre.name)
-            ).length
-        }));
-        
-        res.json(genresWithCount);
+        // novelCount is already calculated in genreService.findAll()
+        res.json(genres);
     } catch (error) {
         return next(new ApiError(500, 'An error occurred while retrieving genres', error));
     }
