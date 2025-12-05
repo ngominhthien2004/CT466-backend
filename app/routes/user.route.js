@@ -1,6 +1,7 @@
 const express = require('express');
 const users = require('../controllers/user.controller');
 const { authenticate, authorize } = require('../middlewares/auth.middleware');
+const { uploadAvatar } = require('../middlewares/upload.middleware');
 
 const router = express.Router();
 
@@ -21,6 +22,9 @@ router.route('/profile/:id')
 
 // Change password
 router.put('/change-password/:id', authenticate, users.changePassword);
+
+// Upload avatar
+router.put('/:id/avatar', authenticate, uploadAvatar.single('avatar'), users.uploadAvatar);
 
 // User management routes
 router.route('/:id')

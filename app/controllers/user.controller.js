@@ -105,14 +105,15 @@ exports.updateUser = async (req, res, next) => {
 
 // Change password
 exports.changePassword = async (req, res, next) => {
-    if (!req.body?.oldPassword) {
-        return next(new ApiError(400, 'Old password can not be empty'));
+    if (!req.body?.currentPassword) {
+        return next(new ApiError(400, 'Current password can not be empty'));
     }
     if (!req.body?.newPassword) {
         return next(new ApiError(400, 'New password can not be empty'));
     }
 
     try {
+        const bcrypt = require('bcryptjs');
         const userService = new UserService(MongoDB.client);
         const user = await userService.findById(req.params.id);
 
@@ -120,18 +121,62 @@ exports.changePassword = async (req, res, next) => {
             return next(new ApiError(404, 'User not found'));
         }
 
-        // Check old password (use bcrypt.compare in production!)
-        if (user.password !== req.body.oldPassword) {
-            return next(new ApiError(401, 'Old password is incorrect'));
+        // Check current password with bcrypt
+        const isMatch = await bcrypt.compare(req.body.currentPassword, user.password);
+        if (!isMatch) {
+            return next(new ApiError(401, 'Current password is incorrect'));
         }
 
-        // Update password (hash with bcrypt in production!)
-        await userService.updatePassword(req.params.id, req.body.newPassword);
+        // Hash new password
+        const hashedPassword = await bcrypt.hash(req.body.newPassword, 10);
+        await userService.updatePassword(req.params.id, hashedPassword);
 
         res.json({ message: 'Password changed successfully' });
     } catch (error) {
         return next(
             new ApiError(500, 'An error occurred while changing password', error)
+        );
+    }
+};
+
+// Upload avatar
+exports.uploadAvatar = async (req, res, next) => {
+    try {
+        if (!req.file) {
+            return next(new ApiError(400, 'No file uploaded'));
+        }
+
+        const userService = new UserService(MongoDB.client);
+        const userId = req.params.id;
+        
+        // Check if user exists
+        const user = await userService.findById(userId);
+        if (!user) {
+            return next(new ApiError(404, 'User not found'));
+        }
+
+        // Delete old avatar file if exists
+        if (user.avatar && !user.avatar.startsWith('http')) {
+            const fs = require('fs');
+            const path = require('path');
+            const oldAvatarPath = path.join(__dirname, '../../../frontend/public/assets/user', userId, user.avatar);
+            if (fs.existsSync(oldAvatarPath)) {
+                fs.unlinkSync(oldAvatarPath);
+            }
+        }
+
+        // Update user avatar
+        const avatarFilename = req.file.filename;
+        await userService.update(userId, { avatar: avatarFilename });
+
+        res.json({
+            message: 'Avatar uploaded successfully',
+            avatar: avatarFilename,
+            avatarUrl: `/assets/user/${userId}/${avatarFilename}`
+        });
+    } catch (error) {
+        return next(
+            new ApiError(500, 'An error occurred while uploading avatar', error)
         );
     }
 };
