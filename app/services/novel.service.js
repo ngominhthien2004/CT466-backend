@@ -115,15 +115,47 @@ class NovelService {
 
     // Get all novels
     async findAll(filter = {}) {
-        const cursor = await this.Novel.find(filter);
-        return await cursor.toArray();
+        const novels = await this.Novel.find(filter).toArray();
+        
+        // Populate genres for each novel
+        for (let novel of novels) {
+            if (novel.genres && novel.genres.length > 0) {
+                const genreObjects = await this.Genre.find({
+                    name: { $in: novel.genres }
+                }).toArray();
+                
+                // Replace genre names with full genre objects
+                novel.genres = genreObjects.map(g => ({
+                    _id: g._id,
+                    name: g.name,
+                    slug: g.slug
+                }));
+            }
+        }
+        
+        return novels;
     }
 
     // Get novel by ID
     async findById(id) {
-        return await this.Novel.findOne({
+        const novel = await this.Novel.findOne({
             _id: ObjectId.isValid(id) ? new ObjectId(id) : null,
         });
+        
+        // Populate genres
+        if (novel && novel.genres && novel.genres.length > 0) {
+            const genreObjects = await this.Genre.find({
+                name: { $in: novel.genres }
+            }).toArray();
+            
+            novel.genres = genreObjects.map(g => ({
+                _id: g._id,
+                name: g.name,
+                slug: g.slug
+            }));
+        }
+        
+        return novel;
     }
 
     // Create novel
