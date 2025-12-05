@@ -65,6 +65,23 @@ exports.getProfile = async (req, res, next) => {
 exports.updateProfile = async (req, res, next) => {
     try {
         const userService = new UserService(MongoDB.client);
+        
+        // Check duplicate username
+        if (req.body.username) {
+            const existingUser = await userService.findByUsername(req.body.username);
+            if (existingUser && existingUser._id.toString() !== req.params.id) {
+                return next(new ApiError(400, 'Tên người dùng đã tồn tại'));
+            }
+        }
+        
+        // Check duplicate email
+        if (req.body.email) {
+            const existingEmail = await userService.findByEmail(req.body.email);
+            if (existingEmail && existingEmail._id.toString() !== req.params.id) {
+                return next(new ApiError(400, 'Email đã được sử dụng'));
+            }
+        }
+        
         const updatedUser = await userService.update(req.params.id, req.body);
         
         if (!updatedUser) {
@@ -124,7 +141,7 @@ exports.changePassword = async (req, res, next) => {
         // Check current password with bcrypt
         const isMatch = await bcrypt.compare(req.body.currentPassword, user.password);
         if (!isMatch) {
-            return next(new ApiError(401, 'Current password is incorrect'));
+            return next(new ApiError(401, 'Mật khẩu hiện tại không đúng'));
         }
 
         // Hash new password

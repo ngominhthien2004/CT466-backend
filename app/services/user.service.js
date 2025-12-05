@@ -75,12 +75,11 @@ class UserService {
         const update = {};
         
         // Only update allowed fields
-        if (payload.fullName !== undefined) update.fullName = payload.fullName;
+        if (payload.username !== undefined) update.username = payload.username;
+        if (payload.email !== undefined) update.email = payload.email;
         if (payload.avatar !== undefined) update.avatar = payload.avatar;
         if (payload.role !== undefined) update.role = payload.role;
         if (payload.isActive !== undefined) update.isActive = payload.isActive;
-        
-        // Don't allow updating email, username, password here
         
         const result = await this.User.findOneAndUpdate(
             filter,
