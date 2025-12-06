@@ -15,6 +15,7 @@ class UserService {
             avatar: payload.avatar,
             role: payload.role || 'user',
             isActive: payload.isActive !== undefined ? payload.isActive : true,
+            googleId: payload.googleId,
         };
 
         // Remove undefined fields
@@ -46,6 +47,11 @@ class UserService {
     // Get user by username
     async findByUsername(username) {
         return await this.User.findOne({ username });
+    }
+
+    // Get user by Google ID
+    async findByGoogleId(googleId) {
+        return await this.User.findOne({ googleId });
     }
 
     // Check if user exists
@@ -80,6 +86,7 @@ class UserService {
         if (payload.avatar !== undefined) update.avatar = payload.avatar;
         if (payload.role !== undefined) update.role = payload.role;
         if (payload.isActive !== undefined) update.isActive = payload.isActive;
+        if (payload.googleId !== undefined) update.googleId = payload.googleId;
         
         const result = await this.User.findOneAndUpdate(
             filter,

@@ -3,6 +3,7 @@ const MongoDB = require('../utils/mongodb.util');
 const ApiError = require('../api-error');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const passport = require('../config/passport');
 
 // Generate JWT token
 const generateToken = (user) => {
@@ -122,3 +123,24 @@ exports.login = async (req, res, next) => {
     }
 };
 
+// Google OAuth callback handler
+exports.googleCallback = async (req, res, next) => {
+    try {
+        if (!req.user) {
+            return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/login?error=auth_failed`);
+        }
+
+        // Generate token
+        const token = generateToken(req.user);
+
+        // Remove password from user object
+        const userWithoutPassword = { ...req.user };
+        delete userWithoutPassword.password;
+
+        // Redirect to frontend with token
+        res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/auth/google/callback?token=${token}&user=${encodeURIComponent(JSON.stringify(userWithoutPassword))}`);
+    } catch (error) {
+        console.error('Google callback error:', error);
+        res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/login?error=auth_failed`);
+    }
+};
