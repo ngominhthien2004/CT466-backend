@@ -1,6 +1,21 @@
 const CommentService = require('../services/comment.service');
 const MongoDB = require('../utils/mongodb.util');
 const ApiError = require('../api-error');
+const { ObjectId } = require('mongodb');
+
+// Helper function to get user data
+async function getUserData(userId) {
+    try {
+        const user = await MongoDB.client.db().collection('users').findOne(
+            { _id: ObjectId.isValid(userId) ? new ObjectId(userId) : userId },
+            { projection: { username: 1, avatar: 1 } }
+        );
+        return user;
+    } catch (error) {
+        console.error('Error getting user data:', error);
+        return null;
+    }
+}
 
 // Get all comments
 exports.getAllComments = async (req, res, next) => {
@@ -101,8 +116,35 @@ exports.createComment = async (req, res, next) => {
     }
     
     try {
+        // Get latest user data (username and avatar)
+        const user = await getUserData(req.body.userId);
+        
+        console.log('Creating comment - User data:', {
+            userId: req.body.userId,
+            foundUser: !!user,
+            userAvatar: user?.avatar,
+            requestAvatar: req.body.userAvatar
+        });
+        
+        if (user) {
+            // Override with latest user data
+            req.body.userName = user.username;
+            req.body.userAvatar = user.avatar || req.body.userAvatar || '';
+        }
+        
+        console.log('Creating comment - Final data:', {
+            userName: req.body.userName,
+            userAvatar: req.body.userAvatar
+        });
+        
         const commentService = new CommentService(MongoDB.client);
         const newComment = await commentService.create(req.body);
+        
+        console.log('Created comment:', {
+            commentId: newComment._id,
+            userAvatar: newComment.userAvatar
+        });
+        
         res.status(201).json(newComment);
     } catch (error) {
         return next(

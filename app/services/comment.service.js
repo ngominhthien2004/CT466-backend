@@ -3,6 +3,45 @@ const { ObjectId } = require('mongodb');
 class CommentService {
     constructor(client) {
         this.Comment = client.db().collection('comments');
+        this.User = client.db().collection('users');
+    }
+
+    // Populate user data (avatar, username) for comments
+    async populateUserData(comments) {
+        if (!Array.isArray(comments)) {
+            comments = [comments];
+        }
+
+        const populatedComments = await Promise.all(
+            comments.map(async (comment) => {
+                if (comment && comment.userId) {
+                    try {
+                        const user = await this.User.findOne(
+                            { _id: ObjectId.isValid(comment.userId) ? new ObjectId(comment.userId) : comment.userId },
+                            { projection: { username: 1, avatar: 1 } }
+                        );
+                        
+                        if (user) {
+                            console.log('Populating user data for comment:', {
+                                commentId: comment._id,
+                                userId: comment.userId,
+                                foundUser: !!user,
+                                userAvatar: user.avatar,
+                                oldAvatar: comment.userAvatar
+                            });
+                            
+                            comment.userName = user.username || comment.userName;
+                            comment.userAvatar = user.avatar || comment.userAvatar || '';
+                        }
+                    } catch (error) {
+                        console.error('Error populating user data:', error);
+                    }
+                }
+                return comment;
+            })
+        );
+
+        return populatedComments;
     }
 
     // Extract comment data from request
@@ -32,7 +71,8 @@ class CommentService {
     // Get all comments
     async findAll(filter = {}) {
         const cursor = await this.Comment.find(filter);
-        return await cursor.toArray();
+        const comments = await cursor.toArray();
+        return await this.populateUserData(comments);
     }
 
     // Get comments by novel ID
@@ -67,9 +107,14 @@ class CommentService {
 
     // Get comment by ID
     async findById(id) {
-        return await this.Comment.findOne({
+        const comment = await this.Comment.findOne({
             _id: ObjectId.isValid(id) ? new ObjectId(id) : null,
         });
+        if (comment) {
+            const populated = await this.populateUserData([comment]);
+            return populated[0];
+        }
+        return comment;
     }
 
     // Create comment
@@ -77,6 +122,18 @@ class CommentService {
         console.log('Create comment - payload received:', payload);
         const comment = this.extractCommentData(payload);
         console.log('Create comment - after extract:', comment);
+
+        // Prevent reply to reply (nested replies)
+        if (comment.parentId) {
+            const parentComment = await this.Comment.findOne({
+                _id: ObjectId.isValid(comment.parentId) ? new ObjectId(comment.parentId) : null
+            });
+            
+            if (parentComment && parentComment.parentId) {
+                // Parent is already a reply, so redirect to the root comment
+                comment.parentId = parentComment.parentId;
+            }
+        }
         
         // Convert novelId to ObjectId if it's a valid string
         if (comment.novelId && ObjectId.isValid(comment.novelId)) {

@@ -86,7 +86,7 @@ class UserService {
             { $set: { ...update, updatedAt: new Date() } },
             { returnDocument: 'after' }
         );
-        return result;
+        return result.value || result;
     }
 
     // Update password
@@ -100,7 +100,7 @@ class UserService {
             { $set: { password: newPassword, updatedAt: new Date() } },
             { returnDocument: 'after' }
         );
-        return result;
+        return result.value || result;
     }
 
     // Delete user
@@ -108,7 +108,7 @@ class UserService {
         const result = await this.User.findOneAndDelete({
             _id: ObjectId.isValid(id) ? new ObjectId(id) : null,
         });
-        return result;
+        return result.value || result;
     }
 
     // Delete all users
