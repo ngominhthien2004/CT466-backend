@@ -30,6 +30,8 @@ exports.chat = async (req, res, next) => {
         // Call chatbot service with context
         const result = await chatbotService.chat(messages, userId, context);
 
+        // Ensure UTF-8 response
+        res.setHeader('Content-Type', 'application/json; charset=utf-8');
         res.json({
             success: true,
             data: result

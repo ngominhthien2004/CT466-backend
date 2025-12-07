@@ -11,23 +11,31 @@ class ChatbotService {
         try {
             // Build system prompt with real data from MongoDB
             let systemContent = `Bạn là trợ lý AI thông minh của NovelMT - nền tảng đọc tiểu thuyết trực tuyến hàng đầu Việt Nam. 
-Nhiệm vụ của bạn:
-- Hỗ trợ người dùng tìm kiếm, gợi ý tiểu thuyết phù hợp với sở thích
-- Trả lời câu hỏi về cách sử dụng nền tảng
-- Cung cấp thông tin về các thể loại, tác giả, tính năng
-- Giải đáp thắc mắc một cách thân thiện, nhiệt tình
 
-Luôn trả lời bằng tiếng Việt, ngắn gọn, dễ hiểu và hữu ích.`;
+NHIỆM VỤ:
+- Hỗ trợ người dùng tìm kiếm, gợi ý tiểu thuyết phù hợp với sở thích
+- Trả lời câu hỏi về cách sử dụng nền tảng, tính năng
+- Cung cấp thông tin về thể loại, tác giả, nội dung
+- Giải đáp thắc mắc một cách thân thiện, nhiệt tình
+- Phân tích và so sánh các tiểu thuyết khi được yêu cầu
+- Gợi ý dựa trên sở thích đọc của người dùng
+
+QUY TẮC:
+✓ Luôn trả lời bằng tiếng Việt
+✓ Ngắn gọn, dễ hiểu nhưng đầy đủ thông tin
+✓ Sử dụng dữ liệu thực tế từ hệ thống khi có
+✓ Nếu không chắc chắn, hãy thừa nhận và đề xuất cách tìm hiểu
+✓ Khuyến khích người dùng khám phá thêm trên nền tảng`;
 
             // Add real platform data if available
             if (context) {
-                systemContent += `\n\n** THÔNG TIN THỰC TẾ VỀ NOVELMT **:
-- Tổng số tiểu thuyết: ${context.totalNovels}
-- Tổng lượt xem: ${context.totalViews.toLocaleString('vi-VN')}
-- Các thể loại có sẵn: ${context.genres}
-- Top tiểu thuyết nổi bật: ${context.topNovels}
+                systemContent += `\n\n📊 DỮ LIỆU THỰC TẾ NOVELMT:
+• Tổng số tiểu thuyết: ${context.totalNovels}
+• Tổng lượt xem: ${context.totalViews.toLocaleString('vi-VN')}
+• Thể loại có sẵn: ${context.genres}
+• Top tiểu thuyết phổ biến: ${context.topNovels}
 
-Khi người dùng hỏi về thể loại hoặc tiểu thuyết, HÃY SỬ DỤNG THÔNG TIN THỰC TẾ TRÊN để trả lời chính xác.`;
+QUAN TRỌNG: Khi trả lời về thể loại hoặc tiểu thuyết cụ thể, HÃY SỬ DỤNG DỮ LIỆU TRÊN. Đừng bịa đặt thông tin không có trong hệ thống.`;
             }
 
             const systemMessage = {
@@ -86,6 +94,9 @@ Khi người dùng hỏi về thể loại hoặc tiểu thuyết, HÃY SỬ D�
 
             const req = https.request(options, (res) => {
                 let data = '';
+                
+                // Set encoding to UTF-8 to handle Vietnamese characters
+                res.setEncoding('utf8');
 
                 res.on('data', (chunk) => {
                     data += chunk;
@@ -95,7 +106,7 @@ Khi người dùng hỏi về thể loại hoặc tiểu thuyết, HÃY SỬ D�
                     try {
                         if (res.statusCode !== 200) {
                             const error = JSON.parse(data);
-                            reject(new ApiError(res.statusCode, error.error?.message || 'DeepSeek API error'));
+                            reject(new ApiError(res.statusCode, error.error?.message || 'Groq API error'));
                         } else {
                             resolve(JSON.parse(data));
                         }
