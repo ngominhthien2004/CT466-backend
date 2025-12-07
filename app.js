@@ -37,9 +37,9 @@ const chaptersRoutes = require('./app/routes/chapter.route');
 const commentsRoutes = require('./app/routes/comment.route');
 const authRoutes = require('./app/routes/auth.route');
 const usersRoutes = require('./app/routes/user.route');
-
 const genresRoutes = require('./app/routes/genre.route');
 const readingHistoryRoutes = require('./app/routes/readingHistory.route');
+const chatbotRoutes = require('./app/routes/chatbot.route');
 
 app.get('/', (req, res) => {
     res.json({ message: 'Welcome to novel application' });
@@ -53,6 +53,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/genres', genresRoutes);
 app.use('/api/reading-history', readingHistoryRoutes);
+app.use('/api/chatbot', chatbotRoutes);
 
 app.use((req, res, next) => {
     return next(new ApiError(404, 'Resource Not Found'));
