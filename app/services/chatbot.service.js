@@ -55,7 +55,6 @@ QUAN TRỌNG: Khi trả lời về thể loại hoặc tiểu thuyết cụ th�
                 stream: false
             });
 
-            // Call DeepSeek API using native https module
             const data = await this.makeHttpsRequest(requestBody);
 
             if (!data.choices || !data.choices[0] || !data.choices[0].message) {
